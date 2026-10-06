@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>__TITLE__</title>
+__OG_TAGS__
+<style>
+  :root{
+    --accent:#1DB954;
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0; padding:0; height:100%;
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    background:#000; overflow:hidden;
+  }
+  #app{
+    position:relative; width:100%; height:100vh; overflow:hidden;
+  }
+  .slide{
+    position:absolute; inset:0;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    text-align:center; color:#fff; padding:40px;
+    opacity:0; transform:scale(1.04);
+    transition:opacity .5s ease, transform .6s ease;
+    pointer-events:none;
+  }
+  .slide.active{
+    opacity:1; transform:scale(1);
+    pointer-events:auto;
+  }
+  .slide h1{ font-size:2.4rem; margin:0 0 12px; line-height:1.15; font-weight:800; }
+  .slide h2.big-number{ font-size:5rem; margin:10px 0; font-weight:900; }
+  .slide p{ font-size:1.1rem; opacity:.9; max-width:480px; margin:0 auto; }
+  .eyebrow{ letter-spacing:3px; text-transform:uppercase; font-size:.75rem; opacity:.7; margin-bottom:18px; font-weight:600; }
+  .logo-chip{
+    position:absolute; top:24px; left:24px; display:flex; align-items:center; gap:8px;
+    font-weight:700; font-size:.9rem; z-index:5; color:#fff; opacity:.85;
+  }
+  .logo-chip .dot{ width:10px; height:10px; border-radius:50%; background:var(--accent); }
+
+  /* progress bars like IG/Spotify stories */
+  .progress-wrap{
+    position:absolute; top:12px; left:16px; right:16px; display:flex; gap:6px; z-index:6;
+  }
+  .progress-track{
+    flex:1; height:3px; background:rgba(255,255,255,.25); border-radius:3px; overflow:hidden;
+  }
+  .progress-fill{
+    height:100%; width:0%; background:#fff;
+  }
+  .progress-track.done .progress-fill{ width:100%; transition:none; }
+  .progress-track.active .progress-fill{ transition:width linear; }
+
+  .tap-zone{ position:absolute; top:0; bottom:0; width:40%; z-index:4; }
+  .tap-left{ left:0; }
+  .tap-right{ right:0; }
+
+  .nav-hint{
+    position:absolute; bottom:18px; left:0; right:0; text-align:center;
+    font-size:.75rem; opacity:.5; z-index:3;
+  }
+
+  /* per-slide background themes */
+  .theme-0{ background:radial-gradient(circle at 30% 20%, #1f3d2b, #0b0f0c 70%); }
+  .theme-1{ background:radial-gradient(circle at 70% 30%, #14532d, #050705 70%); }
+  .theme-2{ background:radial-gradient(circle at 30% 70%, #166534, #040604 70%); }
+  .theme-3{ background:radial-gradient(circle at 60% 60%, #15803d, #030503 70%); }
+  .theme-4{ background:radial-gradient(circle at 50% 40%, #065f46, #020302 70%); }
+  .theme-5{ background:linear-gradient(135deg,#0b3d24,#021208 60%); }
+
+  .emoji{ font-size:3rem; margin-bottom:10px; }
+
+  /* final share slide */
+  .share-card{
+    width:300px; max-width:80vw; aspect-ratio:1/1; border-radius:24px;
+    background:linear-gradient(160deg,#0f2e1c,#071c11 60%);
+    border:1px solid rgba(255,255,255,.15);
+    display:flex; flex-direction:column; justify-content:space-between;
+    padding:24px; text-align:left; margin:18px auto; box-shadow:0 20px 60px rgba(0,0,0,.5);
+  }
+  .share-card .top .eyebrow{ margin-bottom:6px; }
+  .share-card .stat{ font-size:2.6rem; font-weight:900; line-height:1.05; }
+  .share-card .stat-label{ font-size:.95rem; opacity:.85; margin-top:4px; }
+  .share-card .brandrow{ display:flex; align-items:center; justify-content:space-between; font-size:.75rem; opacity:.8; }
+
+  .btn-row{ display:flex; gap:12px; margin-top:18px; flex-wrap:wrap; justify-content:center; }
+  .btn{
+    border:none; border-radius:999px; padding:12px 20px; font-weight:700; font-size:.9rem;
+    cursor:pointer; display:inline-flex; align-items:center; gap:8px;
+  }
+  .btn-primary{ background:var(--accent); color:#06240f; }
+  .btn-secondary{ background:rgba(255,255,255,.12); color:#fff; border:1px solid rgba(255,255,255,.3); }
+  .btn:hover{ filter:brightness(1.08); }
+
+  #exportCanvas{ display:none; }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <div class="logo-chip"><span class="dot"></span>Greenly Wrapped</div>
+  <div class="progress-wrap" id="progressWrap"></div>
+
+  <div class="tap-zone tap-left" onclick="prevSlide()"></div>
+  <div class="tap-zone tap-right" onclick="nextSlide()"></div>
+
+  <div id="slides"></div>
+  <div class="nav-hint">Tap right to continue &nbsp;&rarr;</div>
+</div>
+
+<canvas id="exportCanvas" width="1080" height="1080"></canvas>
+
+<script>
+/* ============================================================
+   The per-client data is injected by the build script below,
+   which swaps the marker on the next line for one client's JSON.
+   The template itself is never edited per client — the build
+   (build.js) renders one HTML file per entry in clients.json.
+============================================================ */
+const clientData = __CLIENT_DATA_JSON__;
+
+const slides = [
+  {
+    theme: "theme-0",
+    html: `
+      <div class="eyebrow">${clientData.companyName} &middot; ${clientData.year}</div>
+      <div class="emoji">🌍</div>
+      <h1>Your Climate Year<br>in Review</h1>
+      <p>Let's look back at what ${clientData.companyName} achieved this year.</p>
+    `
+  },
+  {
+    theme: "theme-1",
+    html: `
+      <div class="eyebrow">Total Footprint Measured</div>
+      <h2 class="big-number" data-count="${clientData.totalEmissionsTons}">0</h2>
+      <p>tons of CO2e tracked across your operations in ${clientData.year}.</p>
+    `
+  },
+  {
+    theme: "theme-2",
+    html: `
+      <div class="eyebrow">Progress</div>
+      <h2 class="big-number"><span data-count="${clientData.reductionPercent}">0</span>%</h2>
+      <p>reduction in emissions compared to last year. Keep that trend going.</p>
+    `
+  },
+  {
+    theme: "theme-3",
+    html: `
+      <div class="eyebrow">Action Taken</div>
+      <h2 class="big-number" data-count="${clientData.actionsCompleted}">0</h2>
+      <p>climate actions completed. Your standout move: <strong>${clientData.topAction}</strong>.</p>
+    `
+  },
+  {
+    theme: "theme-4",
+    html: `
+      <div class="eyebrow">How You Compare</div>
+      <h2 class="big-number"><span data-count="${clientData.percentileRank}">0</span><sup style="font-size:2rem;">th</sup></h2>
+      <p>percentile among ${clientData.industry} companies on Greenly. Top performer status.</p>
+    `
+  },
+  {
+    theme: "theme-5",
+    isFinal: true,
+    html: `
+      <div class="eyebrow">Share Your Wrapped</div>
+      <h1 style="font-size:1.6rem;">Proud of this one? Share it.</h1>
+      <div class="share-card" id="shareCard">
+        <div class="top">
+          <div class="eyebrow" style="opacity:.7;">${clientData.companyName} &middot; ${clientData.year} Climate Wrapped</div>
+          <div class="stat">-${clientData.reductionPercent}%</div>
+          <div class="stat-label">emissions reduction, equal to taking<br>${clientData.co2SavedEquivalent}</div>
+        </div>
+        <div class="brandrow">
+          <span>🌱 Measured with Greenly</span>
+          <span>Top ${100 - clientData.percentileRank}% in ${clientData.industry}</span>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="downloadImage()">⬇ Download image</button>
+        <button class="btn btn-secondary" onclick="shareLinkedIn()">in Share on LinkedIn</button>
+      </div>
+    `
+  }
+];
+
+let current = 0;
+let autoTimer = null;
+const SLIDE_DURATION = 5000; // ms per slide for auto-advance progress bar
+
+const slidesEl = document.getElementById('slides');
+const progressWrap = document.getElementById('progressWrap');
+
+function buildDOM(){
+  slides.forEach((s, i) => {
+    const div = document.createElement('div');
+    div.className = `slide ${s.theme}`;
+    div.id = `slide-${i}`;
+    div.innerHTML = s.html;
+    slidesEl.appendChild(div);
+
+    const track = document.createElement('div');
+    track.className = 'progress-track';
+    track.id = `track-${i}`;
+    track.innerHTML = `<div class="progress-fill" id="fill-${i}"></div>`;
+    progressWrap.appendChild(track);
+  });
+}
+
+function renderCounters(slideEl){
+  const counters = slideEl.querySelectorAll('[data-count]');
+  counters.forEach(el => {
+    const target = parseInt(el.getAttribute('data-count'), 10);
+    let startTime = null;
+    const duration = 900;
+    function step(ts){
+      if(!startTime) startTime = ts;
+      const progress = Math.min((ts - startTime) / duration, 1);
+      el.textContent = Math.floor(progress * target);
+      if(progress < 1) requestAnimationFrame(step);
+      else el.textContent = target;
+    }
+    requestAnimationFrame(step);
+  });
+}
+
+function showSlide(index){
+  slides.forEach((_, i) => {
+    document.getElementById(`slide-${i}`).classList.toggle('active', i === index);
+    const track = document.getElementById(`track-${i}`);
+    track.classList.remove('active','done');
+    document.getElementById(`fill-${i}`).style.transition = 'none';
+    document.getElementById(`fill-${i}`).style.width = '0%';
+    if(i < index) track.classList.add('done');
+  });
+  current = index;
+  renderCounters(document.getElementById(`slide-${index}`));
+  startAutoAdvance();
+}
+
+function startAutoAdvance(){
+  clearTimeout(autoTimer);
+  const isFinal = slides[current].isFinal;
+  const track = document.getElementById(`track-${current}`);
+  track.classList.add('active');
+  const fill = document.getElementById(`fill-${current}`);
+  requestAnimationFrame(() => {
+    fill.style.transition = `width ${SLIDE_DURATION}ms linear`;
+    fill.style.width = '100%';
+  });
+  if(!isFinal){
+    autoTimer = setTimeout(() => nextSlide(), SLIDE_DURATION);
+  }
+}
+
+function nextSlide(){
+  if(current < slides.length - 1) showSlide(current + 1);
+}
+function prevSlide(){
+  if(current > 0) showSlide(current - 1);
+}
+
+document.addEventListener('keydown', (e) => {
+  if(e.key === 'ArrowRight') nextSlide();
+  if(e.key === 'ArrowLeft') prevSlide();
+});
+
+/* ---- Export the final card as a downloadable PNG for LinkedIn ---- */
+function downloadImage(){
+  const canvas = document.getElementById('exportCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+
+  // background
+  const grad = ctx.createLinearGradient(0,0,W,H);
+  grad.addColorStop(0, '#0f2e1c');
+  grad.addColorStop(1, '#071c11');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0,0,W,H);
+
+  ctx.fillStyle = 'rgba(255,255,255,0.7)';
+  ctx.font = '600 28px -apple-system, sans-serif';
+  ctx.fillText(`${clientData.companyName} · ${clientData.year} Climate Wrapped`, 60, 140);
+
+  ctx.fillStyle = '#ffffff';
+  ctx.font = '900 180px -apple-system, sans-serif';
+  ctx.fillText(`-${clientData.reductionPercent}%`, 60, 360);
+
+  ctx.font = '400 32px -apple-system, sans-serif';
+  ctx.fillStyle = 'rgba(255,255,255,0.9)';
+  wrapText(ctx, `emissions reduction, equal to taking ${clientData.co2SavedEquivalent}`, 60, 440, 950, 42);
+
+  ctx.font = '600 28px -apple-system, sans-serif';
+  ctx.fillStyle = '#1DB954';
+  ctx.fillText('🌱 Measured with Greenly', 60, H - 80);
+
+  ctx.textAlign = 'right';
+  ctx.fillStyle = 'rgba(255,255,255,0.8)';
+  ctx.fillText(`Top ${100 - clientData.percentileRank}% in ${clientData.industry}`, W - 60, H - 80);
+  ctx.textAlign = 'left';
+
+  const link = document.createElement('a');
+  link.download = `${clientData.companyName.replace(/\s+/g,'-').toLowerCase()}-wrapped-${clientData.year}.png`;
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+}
+
+function wrapText(ctx, text, x, y, maxWidth, lineHeight){
+  const words = text.split(' ');
+  let line = '';
+  let yy = y;
+  for(let n = 0; n < words.length; n++){
+    const testLine = line + words[n] + ' ';
+    if(ctx.measureText(testLine).width > maxWidth && n > 0){
+      ctx.fillText(line, x, yy);
+      line = words[n] + ' ';
+      yy += lineHeight;
+    } else {
+      line = testLine;
+    }
+  }
+  ctx.fillText(line, x, yy);
+}
+
+function shareLinkedIn(){
+  const pageUrl = encodeURIComponent(window.location.href);
+  window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${pageUrl}`, '_blank');
+}
+
+buildDOM();
+showSlide(0);
+</script>
+</body>
+</html>

@@ -1,0 +1,67 @@
+[
+  {
+    "slug": "acme-corp",
+    "companyName": "Acme Corp",
+    "year": 2026,
+    "totalEmissionsTons": 1240,
+    "reductionPercent": 18,
+    "actionsCompleted": 32,
+    "topAction": "Switched 4 facilities to renewable electricity",
+    "percentileRank": 90,
+    "industry": "Manufacturing",
+    "standoutMonth": "March",
+    "co2SavedEquivalent": "260 cars off the road for a year"
+  },
+  {
+    "slug": "lumen-retail",
+    "companyName": "Lumen Retail",
+    "year": 2026,
+    "totalEmissionsTons": 8600,
+    "reductionPercent": 7,
+    "actionsCompleted": 14,
+    "topAction": "Cut air freight on 60% of inbound logistics",
+    "percentileRank": 62,
+    "industry": "Retail",
+    "standoutMonth": "September",
+    "co2SavedEquivalent": "140 homes' yearly energy use"
+  },
+  {
+    "slug": "nordhaus-logistics",
+    "companyName": "Nordhaus Logistics",
+    "year": 2026,
+    "totalEmissionsTons": 24700,
+    "reductionPercent": 11,
+    "actionsCompleted": 21,
+    "topAction": "Electrified 35% of the last-mile delivery fleet",
+    "percentileRank": 74,
+    "industry": "Transportation",
+    "standoutMonth": "June",
+    "co2SavedEquivalent": "590 cars off the road for a year"
+  },
+  {
+    "slug": "brightwave-tech",
+    "companyName": "Brightwave Tech",
+    "year": 2026,
+    "totalEmissionsTons": 310,
+    "reductionPercent": 29,
+    "actionsCompleted": 41,
+    "topAction": "Moved all workloads to carbon-aware data centers",
+    "percentileRank": 96,
+    "industry": "Software",
+    "standoutMonth": "January",
+    "co2SavedEquivalent": "65 cars off the road for a year"
+  },
+  {
+    "slug": "maison-verte",
+    "companyName": "Maison Verte",
+    "year": 2026,
+    "totalEmissionsTons": 4150,
+    "reductionPercent": 22,
+    "actionsCompleted": 27,
+    "topAction": "Shifted 70% of sourcing to local, low-carbon suppliers",
+    "percentileRank": 85,
+    "industry": "Food & Beverage",
+    "standoutMonth": "November",
+    "co2SavedEquivalent": "900 tons of food waste composted"
+  }
+]
